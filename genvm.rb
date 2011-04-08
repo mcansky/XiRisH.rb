@@ -88,11 +88,11 @@ class JesterSmith < Thor
 
     # copying kernel files
     say "Copying kernel and initrd for #{name}", :green
-    copy_file("#{config["build_dir"]}/vmlinuz-*", "/home/xen/domu/#{name}/kernel/")
-    copy_file("#{config["build_dir"]}/initrd-*", "/home/xen/domu/#{name}/kernel/")
+    copy_file("#{config["build_dir"]}/vmlinuz*", "/home/xen/domu/#{name}/kernel/")
+    copy_file("#{config["build_dir"]}/initrd*", "/home/xen/domu/#{name}/kernel/")
     # storing the names
-    vmlinuz_file = Dir.glob("/home/xen/domu/#{name}/kernel/vmlinuz-*").first
-    initrd_file = Dir.glob("/home/xen/domu/#{name}/kernel/initrd-*").first
+    vmlinuz_file = Dir.glob("/home/xen/domu/#{name}/kernel/vmlinuz*").first
+    initrd_file = Dir.glob("/home/xen/domu/#{name}/kernel/initrd*").first
 
     # generating xen config["file"]
     xenconf = <<-EOF
