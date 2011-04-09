@@ -7,6 +7,12 @@ require 'yaml'
 class JesterSmith < Thor
   include Thor::Actions
 
+  desc "Install Debian Package"
+  def install_deb(name)
+    say "Installing Debian package #{name} to #{@build_dir}", :green
+    run("DEBIAN_FRONTEND=noninteractive chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}")
+  end
+
   #argument :name, :type => :string, :required => true
   #argument :ip, :type => :string, :required => true
   #argument :storage, :type => :string, :required => true
@@ -30,6 +36,8 @@ class JesterSmith < Thor
     version = options[:version].downcase
     storage = options[:storage]
     ip = options[:ip]
+    @build_dir = config["build_dir"]
+    @log_dir = config["log_dir"]
     for_line = "for #{name} on #{storage}"
     if config["dummy"] == 1
       say "WARNING : Dummy mode !", :red
@@ -160,7 +168,13 @@ class JesterSmith < Thor
     apt_sources.gsub!(/^\s*/,'')
     say "Adding apt-sources for #{name}", :green
     create_file "#{config["build_dir"]}/etc/apt/sources.list", apt_sources
+  
+    # installing some stuff
+    install_deb("vim")
 
+    # umount
+    say "Umounting root for #{name}", :green
+    run("umount #{config["build_dir"]}")
     # DONE
   end
 end
