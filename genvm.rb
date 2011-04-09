@@ -38,7 +38,7 @@ class JesterSmith < Thor
     run("mkswap /dev/#{storage}/swap_#{name}")
     # mount new fs
     say "Mounting #{name} fs in build dir", :green
-    run("mount /dev/#{storage}/#{name} #{config["build_dir"]}", {:verbose => @verbose})
+    run("mount /dev/#{storage}/#{name} #{@build_dir}", {:verbose => @verbose})
 
     # debootstrap
     versions = ["lenny", "squeeze32", "squeeze64"]
@@ -106,6 +106,10 @@ class JesterSmith < Thor
 
     if !@noinstall
       install(n_name, version, ip, storage)
+    else
+      # mount fs
+      say "Mounting #{name} fs in build dir", :green
+      run("mount /dev/#{storage}/#{name} #{@build_dir}", {:verbose => @verbose})
     end
 
     # creating storage for kernels
