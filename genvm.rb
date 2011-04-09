@@ -217,6 +217,25 @@ class JesterSmith < Thor
     File.delete("#{@build_dir}/etc/hostname") if File.exist?("rm #{@build_dir}/etc/hostname")
     create_file "#{@build_dir}/etc/hostname", name
 
+    # sources for apt
+    apt_sources = <<-EOF
+      deb http://mir1.ovh.net/debian/ #{@base} main contrib non-free
+      deb-src http://mir1.ovh.net/debian/ #{@base} main contrib non-free
+
+      deb http://security.debian.org/ #{@base}/updates main
+      deb-src http://security.debian.org/ #{@base}/updates main
+    EOF
+    apt_sources.gsub!(/^\s*/,'')
+    say "Adding apt-sources for #{name}", :green
+    File.delete("#{@build_dir}/etc/apt/sources.list") if File.exist?("#{@build_dir}/etc/apt/sources.list")
+    create_file "#{@build_dir}/etc/apt/sources.list", apt_sources
+
+    # updating apt
+    chroot_run("apt-get update")
+    chroot_run("apt-get upgrade -y")
+    chroot_run("apt-get clean")
+
+    install_deb("locales")
     # setting the locale
     say "Setting the locale to #{@locale}", :green
     File.delete("#{@build_dir}/etc/locale.gen") if File.exist?("#{@build_dir}/etc/locale.gen")
@@ -236,25 +255,7 @@ class JesterSmith < Thor
     # running the gen script
     chroot_run("/usr/sbin/locale-gen")
 
-    # sources for apt
-    apt_sources = <<-EOF
-      deb http://mir1.ovh.net/debian/ #{@base} main contrib non-free
-      deb-src http://mir1.ovh.net/debian/ #{@base} main contrib non-free
-
-      deb http://security.debian.org/ #{@base}/updates main
-      deb-src http://security.debian.org/ #{@base}/updates main
-    EOF
-    apt_sources.gsub!(/^\s*/,'')
-    say "Adding apt-sources for #{name}", :green
-    File.delete("#{@build_dir}/etc/apt/sources.list") if File.exist?("#{@build_dir}/etc/apt/sources.list")
-    create_file "#{@build_dir}/etc/apt/sources.list", apt_sources
-
-    # updating apt
-    chroot_run("apt-get update")
-    chroot_run("apt-get upgrade -y")
-    chroot_run("apt-get clean")
     # installing some stuff
-    install_deb("locales")
     packages = ["vim-common", "screen", "openssh-server", "curl", "sudo"]
     packages.each { |deb| install_deb(deb) }
     daemons = ["ntp"]
