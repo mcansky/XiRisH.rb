@@ -108,7 +108,7 @@ class JesterSmith < Thor
     if !@noinstall
       install(n_name, version, ip, storage)
     else
-      say "No install requested, directly configuring", :orange
+      say "No install requested, directly configuring", :yellow
       # mount fs
       say "Mounting #{name} fs in build dir", :green
       run("mount /dev/#{storage}/#{name} #{@build_dir}", {:verbose => @verbose})
@@ -193,7 +193,11 @@ class JesterSmith < Thor
     apt_sources.gsub!(/^\s*/,'')
     say "Adding apt-sources for #{name}", :green
     create_file "#{@build_dir}/etc/apt/sources.list", apt_sources
-  
+
+    # updating apt
+    chroot_run("apt-get update")
+    chroot_run("apt-get upgrade -y")
+    chroot_run("apt-get clean")
     # installing some stuff
     packages = ["vim-common", "screen", "openssh-server", "ntp", "curl", "sudo"]
     packages.each { |deb| install_deb(deb) }
