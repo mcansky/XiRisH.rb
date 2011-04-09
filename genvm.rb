@@ -31,6 +31,7 @@ class JesterSmith < Thor
 
   # install part (deboot strap and all)
   def install(name, version, ip, storage)
+    for_line = "for #{name} on #{storage}"
     # creating dirs
     FileUtils.mkdir_p(@log_dir)
     FileUtils.mkdir_p(@build_dir)
