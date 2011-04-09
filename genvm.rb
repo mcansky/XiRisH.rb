@@ -17,11 +17,29 @@ class JesterSmith < Thor
     say "Deactivating auto start for deamon", :yellow
     run("mv #{@build_dir}/sbin/start-stop-daemon #{@build_dir}/sbin/start-stop-daemon.REAL")
     create_file "#{@build_dir}/sbin/start-stop-daemon", fake
-    run("chmod 755 #{@build_dir}/sbin/start-stop-daemon")
+    run("chmod 766 #{@build_dir}/sbin/start-stop-daemon")
     say "Installing Debian package #{name} to #{@build_dir}", :green
     run("chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}")
     say "Activating auto start for deamon", :yellow
     run("mv #{@build_dir}/sbin/start-stop-daemon.REAL #{@build_dir}/sbin/start-stop-daemon")
+  end
+
+  def install_deb_daemon(name)
+    fake = <<-EOF
+    #!/bin/sh'
+    echo \"Warning: Fake start-stop-daemon called, doing nothing\"
+    EOF
+    fake.gsub!(/^\s*/,'')
+    say "Deactivating auto start for deamon", :yellow
+    run("mv #{@build_dir}/sbin/start-stop-daemon #{@build_dir}/sbin/start-stop-daemon.REAL")
+    create_file "#{@build_dir}/sbin/start-stop-daemon", fake
+    run("chmod 766 #{@build_dir}/sbin/start-stop-daemon")
+    say "Installing Debian package #{name} to #{@build_dir}", :green
+    run("chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}")
+    say "Activating auto start for deamon", :yellow
+    run("mv #{@build_dir}/sbin/start-stop-daemon.REAL #{@build_dir}/sbin/start-stop-daemon")
+    say "Stopping the #{name} deamon", :yellow
+    run("chroot #{@build_dir} /etc/init.d/ntp stop")
   end
 
   # Run a command in the chrooted env
@@ -211,8 +229,10 @@ class JesterSmith < Thor
     chroot_run("apt-get upgrade -y")
     chroot_run("apt-get clean")
     # installing some stuff
-    packages = ["vim-common", "screen", "openssh-server", "ntp", "curl", "sudo"]
+    packages = ["vim-common", "screen", "openssh-server", "curl", "sudo"]
     packages.each { |deb| install_deb(deb) }
+    daemons = ["ntp"]
+    daemons.each { |deb| install_deb_daemon(deb) }
 
     # umount
     say "Umounting root for #{name}", :green
