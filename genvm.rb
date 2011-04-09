@@ -7,7 +7,7 @@ require 'yaml'
 class JesterSmith < Thor
   include Thor::Actions
 
-  desc "Install Debian Package"
+  desc "install_deb", "Install Debian Package"
   def install_deb(name)
     say "Installing Debian package #{name} to #{@build_dir}", :green
     run("DEBIAN_FRONTEND=noninteractive chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}")
