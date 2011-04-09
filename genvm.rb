@@ -9,14 +9,24 @@ class JesterSmith < Thor
 
   # install a debian package
   def install_deb(name)
+    fake = <<-EOF
+    #!/bin/sh'
+    echo \"Warning: Fake start-stop-daemon called, doing nothing\"
+    EOF
+    fake.gsub!(/^\s*/,'')
+    say "Deactivating auto start for deamon", :yellow
+    run("mv #{@build_dir}/sbin/start-stop-daemon #{@build_dir}/sbin/start-stop-daemon.REAL")
+    create_file "#{@build_dir}/sbin/start-stop-daemon", fake
     say "Installing Debian package #{name} to #{@build_dir}", :green
-    chroot_run("DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get --yes --force-yes install #{name}")
+    run("chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}")
+    say "Activating auto start for deamon", :yellow
+    run("mv #{@build_dir}/sbin/start-stop-daemon.REAL #{@build_dir}/sbin/start-stop-daemon")
   end
 
   # Run a command in the chrooted env
   def chroot_run(cmd)
     say "Running command : #{cmd} in #{@build_dir}", :green
-    run("chroot #{@build_dir} #{cmd}")
+    run("chroot #{@build_dir} #{cmd}", {:verbose => @verbose})
   end
 
   # install part (deboot strap and all)
@@ -68,7 +78,7 @@ class JesterSmith < Thor
   #argument :storage, :type => :string, :required => true
   #argument :version, :type => :string, :default => "squeeze64"
   desc "create", "Create a new vm"
-  method_options :ip => :string, :storage => :string, :version => "squeeze64", :no_install => false
+  method_options :ip => :string, :storage => :string, :version => "squeeze64", :no_install => false, :verbose => true
   def create(name)
     #argument :name, :type => :string, :desc => "the name of the vm", :required => true
     #argument :version, :type => :string, :desc => "the version of debian you want to use", :required => true
@@ -89,7 +99,7 @@ class JesterSmith < Thor
     @build_dir = config["build_dir"]
     @log_dir = config["log_dir"]
     @verbose = true
-    @verbose = false if config["verbose"] == 0
+    @verbose = false if ((config["verbose"] == 0) || (options[:verbose] == false))
     @noinstall = options[:no_install]
     @lv_size = config["lv_size"]
     @lv_swap_size = config["lv_swap_size"]
