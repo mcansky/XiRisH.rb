@@ -12,3 +12,4 @@ lv_swap_size: 512M
 mirror: ftp://ftp.fr.debian.org/debian
 gateway: 10.0.0.1
 netmask: 255.255.255.0
+pub_key: /etc/xen-tools/master.pub

@@ -132,6 +132,7 @@ class JesterSmith < Thor
     @packages = false
     @packages = true if (options[:packages] == true)
     @bare = true if (options[:bare] == true)
+    @pub_key = config["pub_key"]
     for_line = "for #{name} on #{storage}"
     if config["dummy"] == 1
       say "WARNING : Dummy mode !", :red
@@ -240,6 +241,19 @@ class JesterSmith < Thor
     chroot_run("apt-get upgrade -y")
     chroot_run("apt-get clean")
 
+    # creating a user
+    say "Creating master user", :green
+    chroot_run "useradd -u 111 -s /bin/bash -m master"
+    # install sudo
+    install_deb("sudo")
+    # add sudo line
+    append_to_file "#{@build_dir}/etc/sudoers", "master ALL=(ALL) ALL"
+    # add pub key
+    pub_key = IO.read(@pub_key)
+    run("mkdir -m 700 #{@build_dir}/home/master/.ssh")
+    append_to_file("#{@build_dir}/home/master/.ssh/authorized_keys2", pub_key)
+    chroot_run("chown -R root:root /home/master/.ssh")
+
     unless @bare
       install_deb("locales")
       # setting the locale
@@ -263,7 +277,7 @@ class JesterSmith < Thor
 
       if @packages
         # installing some stuff
-        packages = ["vim-common", "screen", "openssh-server", "curl", "sudo"]
+        packages = ["vim-common", "screen", "openssh-server", "curl"]
         packages.each { |deb| install_deb(deb) }
         daemons = ["ntp"]
         daemons.each { |deb| install_deb_daemon(deb) }
