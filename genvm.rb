@@ -98,7 +98,7 @@ class JesterSmith < Thor
   #argument :storage, :type => :string, :required => true
   #argument :version, :type => :string, :default => "squeeze64"
   desc "create", "Create a new vm"
-  method_options :ip => :string, :storage => :string, :version => "squeeze64", :no_install => false, :silent => false, :packages => false
+  method_options :ip => :string, :storage => :string, :version => "squeeze64", :no_install => false, :silent => false, :packages => false, :bare => false
   def create(name)
     #argument :name, :type => :string, :desc => "the name of the vm", :required => true
     #argument :version, :type => :string, :desc => "the version of debian you want to use", :required => true
@@ -131,6 +131,7 @@ class JesterSmith < Thor
     @locale = config["locale"] || 'en_US.ISO-8859-15'
     @packages = false
     @packages = true if (options[:packages] == true)
+    @bare = true if (options[:bare] == true)
     for_line = "for #{name} on #{storage}"
     if config["dummy"] == 1
       say "WARNING : Dummy mode !", :red
@@ -239,32 +240,34 @@ class JesterSmith < Thor
     chroot_run("apt-get upgrade -y")
     chroot_run("apt-get clean")
 
-    install_deb("locales")
-    # setting the locale
-    say "Setting the locale to #{@locale}", :green
-    File.delete("#{@build_dir}/etc/locale.gen") if File.exist?("#{@build_dir}/etc/locale.gen")
-    File.delete("#{@build_dir}/etc/default/locale") if File.exist?("#{@build_dir}/etc/default/locale")
-    # creating locale.gen
-    locale_gen = <<-EOF
-      #{@locale} #{@locale.split(".").last}
-    EOF
-    locale_gen.gsub!(/^\s*/,'')
-    create_file "#{@build_dir}/etc/locale.gen", locale_gen
-    # creating locale
-    locale_f = <<-EOF
-      LANG="#{@locale}"
-    EOF
-    locale_f.gsub!(/^\s*/,'')
-    create_file "#{@build_dir}/etc/default/locale", locale_f
-    # running the gen script
-    chroot_run("/usr/sbin/locale-gen")
+    unless @bare
+      install_deb("locales")
+      # setting the locale
+      say "Setting the locale to #{@locale}", :green
+      File.delete("#{@build_dir}/etc/locale.gen") if File.exist?("#{@build_dir}/etc/locale.gen")
+      File.delete("#{@build_dir}/etc/default/locale") if File.exist?("#{@build_dir}/etc/default/locale")
+      # creating locale.gen
+      locale_gen = <<-EOF
+        #{@locale} #{@locale.split(".").last}
+      EOF
+      locale_gen.gsub!(/^\s*/,'')
+      create_file "#{@build_dir}/etc/locale.gen", locale_gen
+      # creating locale
+      locale_f = <<-EOF
+        LANG="#{@locale}"
+      EOF
+      locale_f.gsub!(/^\s*/,'')
+      create_file "#{@build_dir}/etc/default/locale", locale_f
+      # running the gen script
+      chroot_run("/usr/sbin/locale-gen")
 
-    if @packages
-      # installing some stuff
-      packages = ["vim-common", "screen", "openssh-server", "curl", "sudo"]
-      packages.each { |deb| install_deb(deb) }
-      daemons = ["ntp"]
-      daemons.each { |deb| install_deb_daemon(deb) }
+      if @packages
+        # installing some stuff
+        packages = ["vim-common", "screen", "openssh-server", "curl", "sudo"]
+        packages.each { |deb| install_deb(deb) }
+        daemons = ["ntp"]
+        daemons.each { |deb| install_deb_daemon(deb) }
+      end
     end
 
     # umount
