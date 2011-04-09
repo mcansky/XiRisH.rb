@@ -7,18 +7,19 @@ require 'yaml'
 class JesterSmith < Thor
   include Thor::Actions
 
-  desc "install_deb", "Install Debian Package"
+  # install a debian package
   def install_deb(name)
     say "Installing Debian package #{name} to #{@build_dir}", :green
     run("DEBIAN_FRONTEND=noninteractive chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}", {:verbose => @verbose})
   end
 
-  desc "chroot_run", "Run a command in the chrooted env"
+  # Run a command in the chrooted env
   def chroot_run(cmd)
     say "Running command : #{cmd} in #{@build_dir}", :green
     run("chroot #{@build_dir} #{cmd}")
   end
 
+  # install part (deboot strap and all)
   def install(name, version, ip, storage)
     # creating dirs
     FileUtils.mkdir_p(@log_dir)
@@ -107,6 +108,7 @@ class JesterSmith < Thor
     if !@noinstall
       install(n_name, version, ip, storage)
     else
+      say "No install requested, directly configuring", :orange
       # mount fs
       say "Mounting #{name} fs in build dir", :green
       run("mount /dev/#{storage}/#{name} #{@build_dir}", {:verbose => @verbose})
@@ -159,7 +161,7 @@ class JesterSmith < Thor
     network_conf.gsub!(/^\s*/,'')
     # creating the config file
     say "Creating network file for #{name}", :green
-    create_file "#{config["build_dir"]}/etc/network/interfaces", network_conf
+    create_file "#{@build_dir}/etc/network/interfaces", network_conf
 
     # creating the fstab file
     fstab_file = <<-EOF
@@ -170,27 +172,27 @@ class JesterSmith < Thor
     fstab_file.gsub!(/^\s*/,'')
     # creating the fstab file
     say "Creating fstab file for #{name}", :green
-    create_file "#{config["build_dir"]}/etc/fstab", fstab_file
+    create_file "#{@build_dir}/etc/fstab", fstab_file
 
     # adding line to inittab
     say "Adding hvc0 line to inittab for #{name}", :green
-    prepend_to_file "#{config["build_dir"]}/etc/inittab", "hvc0:23:respawn:/sbin/getty 38400 hvc0"
+    prepend_to_file "#{@build_dir}/etc/inittab", "hvc0:23:respawn:/sbin/getty 38400 hvc0"
 
     # hostname
     say "Creating hostname file for #{name}", :green
-    create_file "#{config["build_dir"]}/etc/hostname", name
+    create_file "#{@build_dir}/etc/hostname", name
 
     # sources for apt
     apt_sources = <<-EOF
-      deb http://mir1.ovh.net/debian/ #{base} main contrib non-free
-      deb-src http://mir1.ovh.net/debian/ #{base} main contrib non-free
+      deb http://mir1.ovh.net/debian/ #{@base} main contrib non-free
+      deb-src http://mir1.ovh.net/debian/ #{@base} main contrib non-free
 
-      deb http://security.debian.org/ #{base}/updates main
-      deb-src http://security.debian.org/ #{base}/updates main
+      deb http://security.debian.org/ #{@base}/updates main
+      deb-src http://security.debian.org/ #{@base}/updates main
     EOF
     apt_sources.gsub!(/^\s*/,'')
     say "Adding apt-sources for #{name}", :green
-    create_file "#{config["build_dir"]}/etc/apt/sources.list", apt_sources
+    create_file "#{@build_dir}/etc/apt/sources.list", apt_sources
   
     # installing some stuff
     packages = ["vim-common", "screen", "openssh-server", "ntp", "curl", "sudo"]
