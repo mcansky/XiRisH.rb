@@ -10,7 +10,56 @@ class JesterSmith < Thor
   desc "install_deb", "Install Debian Package"
   def install_deb(name)
     say "Installing Debian package #{name} to #{@build_dir}", :green
-    run("DEBIAN_FRONTEND=noninteractive chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}")
+    run("DEBIAN_FRONTEND=noninteractive chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}", {:verbose => @verbose)
+  end
+
+  desc "chroot_run", "Run a command in the chrooted env"
+  def chroot_run(cmd)
+    say "Running command : #{cmd} in #{@build_dir}", :green
+    run("chroot #{@build_dir} #{cmd}")
+  end
+
+  def install(name, version, ip, storage)
+    # creating dirs
+    FileUtils.mkdir_p(@log_dir)
+    FileUtils.mkdir_p(@build_dir)
+
+    # creating the fs
+    say "Creating filesystem #{name} on #{storage}", :green
+    run("lvcreate -L#{@lv_size} -n #{name} #{storage}", {:verbose => @verbose})
+    # creating the swap
+    say "Creating swap #{for_line}", :green
+    run("lvcreate -L#{@lv_swap_size} -n swap_#{name} #{storage}", {:verbose => @verbose})
+    # making the fs
+    say "Mkfs filesystem #{for_line}", :green
+    run("mkfs -t ext4 /dev/#{storage}/#{name}")
+    # mkfs swap
+    say "Mkfs swap #{for_line}", :green
+    run("mkswap /dev/#{storage}/swap_#{name}")
+    # mount new fs
+    say "Mounting #{name} fs in build dir", :green
+    run("mount /dev/#{storage}/#{name} #{config["build_dir"]}", {:verbose => @verbose})
+
+    # debootstrap
+    versions = ["lenny", "squeeze32", "squeeze64"]
+    raise ArgumentError, "version not known" if !versions.include?(version)
+    case
+      when version == "lenny"
+        @arch = "amd64"
+        @kernel = "linux-image-2.6-xen-amd64"
+        @base = "lenny"
+      when version == "squeeze32"
+        @arch = "i386"
+        @kernel = "linux-image-2.6-686-bigmem"
+        @base = "squeeze"
+      when version == "squeeze64"
+        @arch = "amd64"
+        @kernel = "linux-image-2.6-amd64"
+        @base = "squeeze"
+    end
+    # running the debootstrap
+    say "Deboostraping #{name} as #{version}", :green
+    run("debootstrap --arch=#{@arch} --components=main,contrib,non-free --include=#{@kernel} #{@base} #{@build_dir} #{@mirror}", {:verbose => @verbose})
   end
 
   #argument :name, :type => :string, :required => true
@@ -18,7 +67,7 @@ class JesterSmith < Thor
   #argument :storage, :type => :string, :required => true
   #argument :version, :type => :string, :default => "squeeze64"
   desc "create", "Create a new vm"
-  method_options :ip => :string, :storage => :string, :version => "squeeze64"
+  method_options :ip => :string, :storage => :string, :version => "squeeze64", :no_install => false
   def create(name)
     #argument :name, :type => :string, :desc => "the name of the vm", :required => true
     #argument :version, :type => :string, :desc => "the version of debian you want to use", :required => true
@@ -38,6 +87,16 @@ class JesterSmith < Thor
     ip = options[:ip]
     @build_dir = config["build_dir"]
     @log_dir = config["log_dir"]
+    @verbose = true
+    @verbose = false if config["verbose"] == 0
+    @noinstall = options[:no_install]
+    @lv_size = config["lv_size"]
+    @lv_swap_size = config["lv_swap_size"]
+    # default args aka squeeze 64
+    @arch = "amd64"
+    @kernel = "linux-image-2.6-amd64"
+    @base = "squeeze"
+    @mirror = config["mirror"]
     for_line = "for #{name} on #{storage}"
     if config["dummy"] == 1
       say "WARNING : Dummy mode !", :red
@@ -45,61 +104,19 @@ class JesterSmith < Thor
       config["log_dir"] = "/tmp/jester_log"
     end
 
-    # creating dirs
-    FileUtils.mkdir_p(config["log_dir"])
-    FileUtils.mkdir_p(config["build_dir"])
-
-    # creating the fs
-    say "Creating filesystem #{for_line}", :green
-    run("lvcreate -L#{config["lv_size"]} -n #{n_name} #{storage}")
-    # creating the swap
-    say "Creating swap #{for_line}", :green
-    run("lvcreate -L#{config["lv_swap_size"]} -n swap_#{n_name} #{storage}")
-    # making the fs
-    say "Mkfs filesystem #{for_line}", :green
-    run("mkfs -t ext4 /dev/#{storage}/#{n_name}")
-    # mkfs swap
-    say "Mkfs swap #{for_line}", :green
-    run("mkswap /dev/#{storage}/swap_#{n_name}")
-    # mount new fs
-    say "Mounting #{name} fs in build dir", :green
-    run("mount /dev/#{storage}/#{n_name} #{config["build_dir"]}")
-
-    # debootstrap
-    versions = ["lenny", "squeeze32", "squeeze64"]
-    raise ArgumentError, "version not known" if !versions.include?(version)
-    # default args aka squeeze 64
-    arch = "amd64"
-    kernel = "linux-image-2.6-amd64"
-    base = "squeeze"
-    case
-      when version == "lenny"
-        arch = "amd64"
-        kernel = "linux-image-2.6-xen-amd64"
-        base = "lenny"
-      when version == "squeeze32"
-        arch = "i386"
-        kernel = "linux-image-2.6-686-bigmem"
-        base = "squeeze"
-      when version == "squeeze64"
-        arch = "amd64"
-        kernel = "linux-image-2.6-amd64"
-        base = "squeeze"
+    if !@noinstall
+      install(n_name, version, ip, storage)
     end
-    # running the debootstrap
-    say "Deboostraping #{name} as #{version}", :green
-    run("debootstrap --arch=#{arch} --components=main,contrib,non-free --include=#{kernel} #{base} #{config["build_dir"]} #{config["mirror"]}")
 
     # creating storage for kernels
     say "Creating kernel storage for #{name}", :green
     FileUtils.mkdir_p("/home/xen/domu/#{name}/kernel")
-
     # copying kernel files
     say "Copying kernel and initrd for #{name}", :green
     vmlinuz_file = Dir.glob("#{config["build_dir"]}/boot/vmlinuz-*").first
     initrd_file = Dir.glob("#{config["build_dir"]}/boot/initrd*").first
-    run("cp #{vmlinuz_file} /home/xen/domu/#{name}/kernel/")
-    run("cp #{initrd_file} /home/xen/domu/#{name}/kernel/")
+    run("cp #{vmlinuz_file} /home/xen/domu/#{name}/kernel/", {:verbose => @verbose})
+    run("cp #{initrd_file} /home/xen/domu/#{name}/kernel/", {:verbose => @verbose})
     # storing the names
     vmlinuz_file = Dir.glob("/home/xen/domu/#{name}/kernel/vmlinuz*").first
     initrd_file = Dir.glob("/home/xen/domu/#{name}/kernel/initrd*").first
@@ -131,11 +148,11 @@ class JesterSmith < Thor
   
     auto eth0
     iface eth0 inet static
-            address #{IP}
+            address #{ip}
             gateway #{config["gateway"]}
             netmask 255.255.255.0"
     EOF
-    network_config.gsub!(/^\s*/,'')
+    network_conf.gsub!(/^\s*/,'')
     # creating the config file
     say "Creating network file for #{name}", :green
     create_file "#{config["build_dir"]}/etc/network/interfaces", network_conf
@@ -161,7 +178,7 @@ class JesterSmith < Thor
 
     # sources for apt
     apt_sources = <<-EOF
-      sources="deb http://mir1.ovh.net/debian/ #{base} main contrib non-free
+      deb http://mir1.ovh.net/debian/ #{base} main contrib non-free
       deb-src http://mir1.ovh.net/debian/ #{base} main contrib non-free
 
       deb http://security.debian.org/ #{base}/updates main
@@ -172,11 +189,12 @@ class JesterSmith < Thor
     create_file "#{config["build_dir"]}/etc/apt/sources.list", apt_sources
   
     # installing some stuff
-    install_deb("vim")
+    packages = ["vim-common", "screen", "openssh-server", "ntp", "curl", "sudo"]
+    packages.each { |deb| install_deb(deb) }
 
     # umount
     say "Umounting root for #{name}", :green
-    run("umount #{config["build_dir"]}")
+    run("umount #{config["build_dir"]}", {:verbose => @verbose})
     # DONE
   end
 end
