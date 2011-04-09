@@ -96,8 +96,10 @@ class JesterSmith < Thor
 
     # copying kernel files
     say "Copying kernel and initrd for #{name}", :green
-    copy_file("#{config["build_dir"]}/boot/vmlinuz-*", "/home/xen/domu/#{name}/kernel/")
-    copy_file("#{config["build_dir"]}/boot/initrd-*", "/home/xen/domu/#{name}/kernel/")
+    vmlinuz_file = Dir.glob("#{config["build_dir"]}/boot/vmlinuz-*").first
+    initrd_file = Dir.glob("#{config["build_dir"]}/boot/initrd*").first
+    run("cp #{vmlinuz_file} /home/xen/domu/#{name}/kernel/")
+    run("cp #{initrd_file} /home/xen/domu/#{name}/kernel/")
     # storing the names
     vmlinuz_file = Dir.glob("/home/xen/domu/#{name}/kernel/vmlinuz*").first
     initrd_file = Dir.glob("/home/xen/domu/#{name}/kernel/initrd*").first
