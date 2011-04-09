@@ -125,10 +125,10 @@ class JesterSmith < Thor
       daemons.each { |deb| install_deb_daemon(deb) }
     
       # installing asked stuff
-      if @packages.count > 0
+      if (@packages != nil) && (@packages.count > 0)
         @packages.each { |deb| install_deb(deb) }
       end
-      if @daemons.count > 0
+      if (@daemons != nil) && (@daemons.count > 0)
         @daemons.each { |deb| install_deb_daemon(deb) }
       end
     end
