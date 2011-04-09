@@ -26,7 +26,7 @@ class JesterSmith < Thor
     #argument :storage, :type => :string, :desc => "the storage vg you want to use", :required => true
     #desc "Create a new Xen VM"
 
-    say "Starting the script with options :\n\tname : #{options[:name]}\n\tversion : #{options[:version]}\n\tip : #{options[:ip]}\n\tstorage : #{options[:storage]}\n"
+    say "Starting the script with options :\n\tname : #{name}\n\tversion : #{options[:version]}\n\tip : #{options[:ip]}\n\tstorage : #{options[:storage]}\n"
 
     # loading some vars
     config = YAML::load( File.open( "config.yml" ) )
@@ -96,8 +96,8 @@ class JesterSmith < Thor
 
     # copying kernel files
     say "Copying kernel and initrd for #{name}", :green
-    copy_file("#{config["build_dir"]}/vmlinuz*", "/home/xen/domu/#{name}/kernel/")
-    copy_file("#{config["build_dir"]}/initrd*", "/home/xen/domu/#{name}/kernel/")
+    copy_file("#{config["build_dir"]}vmlinu*", "/home/xen/domu/#{name}/kernel/")
+    copy_file("#{config["build_dir"]}initr*", "/home/xen/domu/#{name}/kernel/")
     # storing the names
     vmlinuz_file = Dir.glob("/home/xen/domu/#{name}/kernel/vmlinuz*").first
     initrd_file = Dir.glob("/home/xen/domu/#{name}/kernel/initrd*").first
