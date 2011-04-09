@@ -17,6 +17,7 @@ class JesterSmith < Thor
     say "Deactivating auto start for deamon", :yellow
     run("mv #{@build_dir}/sbin/start-stop-daemon #{@build_dir}/sbin/start-stop-daemon.REAL")
     create_file "#{@build_dir}/sbin/start-stop-daemon", fake
+    run("chmod 755 #{@build_dir}/sbin/start-stop-daemon")
     say "Installing Debian package #{name} to #{@build_dir}", :green
     run("chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}")
     say "Activating auto start for deamon", :yellow
