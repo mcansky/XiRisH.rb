@@ -4,8 +4,8 @@ specif: 0
 loading: 1
 dummy: 1
 log: 1
-log_dir: /var/jester/logs/
-build_dir: /var/jester/build/
+log_dir: /var/jester/logs
+build_dir: /var/jester/build
 lv_size: 4G
 lv_swap_size: 512M
 mirror: ftp://ftp.fr.debian.org/debian
