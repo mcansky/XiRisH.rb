@@ -194,8 +194,8 @@ class JesterSmith < Thor
         name = '#{name}'
         vif = [ 'ip=#{@ip}' ]
         disk = [
-            'phy:/dev/#{storage}/#{name},xvda1,w',
-            'phy:/dev/#{storage}/swap_#{name},xvda2,w'
+            'phy:/dev/#{@storage}/#{name},xvda1,w',
+            'phy:/dev/#{@storage}/swap_#{name},xvda2,w'
         ]
         root = '/dev/xvda1 ro'
         console = 'hvc0'
@@ -299,6 +299,7 @@ class JesterSmith < Thor
     storage = options[:storage]
     ip = options[:ip]
     @ip = ip
+    @storage = storage
     @build_dir = config["build_dir"]
     @log_dir = config["log_dir"]
     @verbose = true
