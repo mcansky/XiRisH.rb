@@ -4,6 +4,7 @@ specif: 0
 loading: 1
 dummy: 1
 log: 1
+locale: en_US.ISO-8859-15
 log_dir: /var/jester/logs
 build_dir: /var/jester/build
 lv_size: 4G

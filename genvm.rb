@@ -128,6 +128,7 @@ class JesterSmith < Thor
     @kernel = "linux-image-2.6-amd64"
     @base = "squeeze"
     @mirror = config["mirror"]
+    @locale = config["locale"] || 'en_US.ISO-8859-15'
     for_line = "for #{name} on #{storage}"
     if config["dummy"] == 1
       say "WARNING : Dummy mode !", :red
@@ -215,6 +216,25 @@ class JesterSmith < Thor
     say "Creating hostname file for #{name}", :green
     File.delete("#{@build_dir}/etc/hostname") if File.exist?("rm #{@build_dir}/etc/hostname")
     create_file "#{@build_dir}/etc/hostname", name
+
+    # setting the locale
+    say "Setting the locale to #{@locale}", :green
+    File.delete("#{@build_dir}/etc/locale.gen") if File.exist?("#{@build_dir}/etc/locale.gen")
+    File.delete("#{@build_dir}/etc/default/locale") if File.exist?("#{@build_dir}/etc/default/locale")
+    # creating locale.gen
+    locale_gen = <<-EOF
+      #{@locale} #{@locale.split(".").last}
+    EOF
+    locale_gen.gsub!(/^\s*/,'')
+    create_file "#{@build_dir}/etc/locale.gen", locale_gen
+    # creating locale
+    locale_f = <<-EOF
+      LANG="#{@locale}"
+    EOF
+    locale_f.gsub!(/^\s*/,'')
+    create_file "#{@build_dir}/etc/default/locale", locale_f
+    # running the gen script
+    chroot_run("/usr/sbin/locale-gen")
 
     # sources for apt
     apt_sources = <<-EOF
