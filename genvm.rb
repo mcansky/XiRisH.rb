@@ -166,7 +166,7 @@ class JesterSmith < Thor
       # add pub key
       pub_key = IO.read(@pub_key)
       run("mkdir -m 700 #{@build_dir}/home/master/.ssh")
-      append_to_file("#{@build_dir}/home/master/.ssh/authorized_keys2", pub_key)
+      create_file "#{@build_dir}/home/master/.ssh/authorized_keys2", pub_key
       chroot_run("chown -R root:root /home/master/.ssh")
     end
 
