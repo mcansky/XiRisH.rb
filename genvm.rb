@@ -98,7 +98,7 @@ class JesterSmith < Thor
   #argument :storage, :type => :string, :required => true
   #argument :version, :type => :string, :default => "squeeze64"
   desc "create", "Create a new vm"
-  method_options :ip => :string, :storage => :string, :version => "squeeze64", :no_install => false, :verbose => true
+  method_options :ip => :string, :storage => :string, :version => "squeeze64", :no_install => false, :silent => false, :packages => false
   def create(name)
     #argument :name, :type => :string, :desc => "the name of the vm", :required => true
     #argument :version, :type => :string, :desc => "the version of debian you want to use", :required => true
@@ -119,7 +119,7 @@ class JesterSmith < Thor
     @build_dir = config["build_dir"]
     @log_dir = config["log_dir"]
     @verbose = true
-    @verbose = false if ((config["verbose"] == 0) || (options[:verbose] == false))
+    @verbose = false if ((config["verbose"] == 0) || (options[:silent] == true))
     @noinstall = options[:no_install]
     @lv_size = config["lv_size"]
     @lv_swap_size = config["lv_swap_size"]
@@ -160,9 +160,10 @@ class JesterSmith < Thor
 
     # generating xen config["file"]
     xenconf = <<-EOF
-      kernel = #{vmlinuz_file}
-      ramdisk= #{initrd_file}
-      memory = 512
+      kernel = '#{vmlinuz_file}'
+      ramdisk= '#{initrd_file}'
+      vcpus = '1'
+      memory = '512'
       name = '#{name}'
       vif = [ 'ip=#{ip}' ]
       disk = [
@@ -171,6 +172,7 @@ class JesterSmith < Thor
       ]
       root = '/dev/xvda1 ro'
       console = 'hvc0'
+      
     EOF
     # removing white chars at start of lines
     xenconf.gsub!(/^\s*/,'')
@@ -181,14 +183,14 @@ class JesterSmith < Thor
 
     # generating network config file
     network_conf = <<-EOF
-    interfaces="auto lo
+    auto lo
     iface lo inet loopback
   
     auto eth0
     iface eth0 inet static
             address #{ip}
             gateway #{config["gateway"]}
-            netmask 255.255.255.0"
+            netmask #{config["netmask"]}
     EOF
     network_conf.gsub!(/^\s*/,'')
     # creating the config file
@@ -255,11 +257,13 @@ class JesterSmith < Thor
     # running the gen script
     chroot_run("/usr/sbin/locale-gen")
 
-    # installing some stuff
-    packages = ["vim-common", "screen", "openssh-server", "curl", "sudo"]
-    packages.each { |deb| install_deb(deb) }
-    daemons = ["ntp"]
-    daemons.each { |deb| install_deb_daemon(deb) }
+    if @packages
+      # installing some stuff
+      packages = ["vim-common", "screen", "openssh-server", "curl", "sudo"]
+      packages.each { |deb| install_deb(deb) }
+      daemons = ["ntp"]
+      daemons.each { |deb| install_deb_daemon(deb) }
+    end
 
     # umount
     say "Umounting root for #{name}", :green

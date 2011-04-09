@@ -10,4 +10,5 @@ build_dir: /var/jester/build
 lv_size: 4G
 lv_swap_size: 512M
 mirror: ftp://ftp.fr.debian.org/debian
-gateway: 10.0.0.254
+gateway: 10.0.0.1
+netmask: 255.255.255.0
