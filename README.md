@@ -1,5 +1,9 @@
 # Thor script to create xen VMs
 
+## About
+
+The main point is to have a one line command to create a full featured domU system on a Debian dom0 system. At the moment no "classes" of systems are used, you need to tweak the config file for that, but it's definitely in the todo list.
+
 ## Install
 
 1. Get the config and rb file.
