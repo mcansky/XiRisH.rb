@@ -254,6 +254,7 @@ class JesterSmith < Thor
     chroot_run("apt-get upgrade -y")
     chroot_run("apt-get clean")
     # installing some stuff
+    install_deb("locales")
     packages = ["vim-common", "screen", "openssh-server", "curl", "sudo"]
     packages.each { |deb| install_deb(deb) }
     daemons = ["ntp"]
