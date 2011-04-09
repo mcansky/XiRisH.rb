@@ -39,7 +39,7 @@ class JesterSmith < Thor
     say "Activating auto start for deamon", :yellow
     run("mv #{@build_dir}/sbin/start-stop-daemon.REAL #{@build_dir}/sbin/start-stop-daemon")
     say "Stopping the #{name} deamon", :yellow
-    run("chroot #{@build_dir} /etc/init.d/ntp stop")
+    run("chroot #{@build_dir} /etc/init.d/#{name} stop")
   end
 
   # Run a command in the chrooted env
@@ -129,6 +129,8 @@ class JesterSmith < Thor
     @base = "squeeze"
     @mirror = config["mirror"]
     @locale = config["locale"] || 'en_US.ISO-8859-15'
+    @packages = false
+    @packages = true if (options[:packages] == true)
     for_line = "for #{name} on #{storage}"
     if config["dummy"] == 1
       say "WARNING : Dummy mode !", :red
