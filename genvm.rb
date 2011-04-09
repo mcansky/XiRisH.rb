@@ -214,7 +214,7 @@ class JesterSmith < Thor
 
     # hostname
     say "Creating hostname file for #{name}", :green
-    File.delete("#{@build_dir}/etc/hostname") if File.exist?("rm #{@build_dir}/etc/hostname")
+    File.delete("#{@build_dir}/etc/hostname") if File.exist?("#{@build_dir}/etc/hostname")
     create_file "#{@build_dir}/etc/hostname", name
 
     # sources for apt
