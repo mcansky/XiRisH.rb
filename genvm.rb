@@ -215,12 +215,12 @@ class JesterSmith < Thor
 
     # adding line to inittab
     say "Adding hvc0 line to inittab for #{name}", :green
-    prepend_to_file "#{@build_dir}/etc/inittab", "hvc0:23:respawn:/sbin/getty 38400 hvc0"
+    append_to_file "#{@build_dir}/etc/inittab", "hvc0:23:respawn:/sbin/getty 38400 hvc0"
 
     # hostname
     say "Creating hostname file for #{name}", :green
     File.delete("#{@build_dir}/etc/hostname") if File.exist?("#{@build_dir}/etc/hostname")
-    create_file "#{@build_dir}/etc/hostname", name
+    create_file "#{@build_dir}/etc/hostname", name.gsub("_",'-')
 
     # sources for apt
     apt_sources = <<-EOF
