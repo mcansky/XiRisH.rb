@@ -175,6 +175,7 @@ class JesterSmith < Thor
     xenconf.gsub!(/^\s*/,'')
     # creating the config file
     say "Creating xenconf file for #{name}", :green
+    File.delete("/etc/xen/xen.d/#{name}.cfg") if File.exist?("/etc/xen/xen.d/#{name}.cfg")
     create_file "/etc/xen/xen.d/#{name}.cfg", xenconf
 
     # generating network config file
@@ -191,6 +192,7 @@ class JesterSmith < Thor
     network_conf.gsub!(/^\s*/,'')
     # creating the config file
     say "Creating network file for #{name}", :green
+    File.delete("#{@build_dir}/etc/network/interfaces") if File.exist?("#{@build_dir}/etc/network/interfaces")
     create_file "#{@build_dir}/etc/network/interfaces", network_conf
 
     # creating the fstab file
@@ -202,6 +204,7 @@ class JesterSmith < Thor
     fstab_file.gsub!(/^\s*/,'')
     # creating the fstab file
     say "Creating fstab file for #{name}", :green
+    File.delete("#{@build_dir}/etc/fstab") if File.exist?("#{@build_dir}/etc/fstab")
     create_file "#{@build_dir}/etc/fstab", fstab_file
 
     # adding line to inittab
@@ -210,6 +213,7 @@ class JesterSmith < Thor
 
     # hostname
     say "Creating hostname file for #{name}", :green
+    File.delete("#{@build_dir}/etc/hostname") if File.exist?("rm #{@build_dir}/etc/hostname")
     create_file "#{@build_dir}/etc/hostname", name
 
     # sources for apt
@@ -222,6 +226,7 @@ class JesterSmith < Thor
     EOF
     apt_sources.gsub!(/^\s*/,'')
     say "Adding apt-sources for #{name}", :green
+    File.delete("#{@build_dir}/etc/apt/sources.list") if File.exist?("#{@build_dir}/etc/apt/sources.list")
     create_file "#{@build_dir}/etc/apt/sources.list", apt_sources
 
     # updating apt
