@@ -10,7 +10,7 @@ class JesterSmith < Thor
   desc "install_deb", "Install Debian Package"
   def install_deb(name)
     say "Installing Debian package #{name} to #{@build_dir}", :green
-    run("DEBIAN_FRONTEND=noninteractive chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}", {:verbose => @verbose)
+    run("DEBIAN_FRONTEND=noninteractive chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}", {:verbose => @verbose})
   end
 
   desc "chroot_run", "Run a command in the chrooted env"
@@ -75,7 +75,7 @@ class JesterSmith < Thor
     #argument :storage, :type => :string, :desc => "the storage vg you want to use", :required => true
     #desc "Create a new Xen VM"
 
-    say "Starting the script with options :\n\tname : #{name}\n\tversion : #{options[:version]}\n\tip : #{options[:ip]}\n\tstorage : #{options[:storage]}\n"
+    say "Starting the script with options :\n\tname : #{name}\n\tversion : #{options[:version]}\n\tip : #{options[:ip]}\n\tstorage : #{options[:storage]}\n", :green
 
     # loading some vars
     config = YAML::load( File.open( "config.yml" ) )
