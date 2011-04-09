@@ -10,7 +10,7 @@ class JesterSmith < Thor
   # install a debian package
   def install_deb(name)
     say "Installing Debian package #{name} to #{@build_dir}", :green
-    run("DEBIAN_FRONTEND=noninteractive chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{name}", {:verbose => @verbose})
+    chroot_run("DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get --yes --force-yes install #{name}")
   end
 
   # Run a command in the chrooted env
@@ -200,11 +200,7 @@ class JesterSmith < Thor
     chroot_run("apt-get clean")
     # installing some stuff
     packages = ["vim-common", "screen", "openssh-server", "ntp", "curl", "sudo"]
-    #packages.each { |deb| install_deb(deb) }
-    packages.each do |deb|
-      say "Installing Debian package #{deb} to #{@build_dir}", :yellow
-      run("DEBIAN_FRONTEND=noninteractive chroot #{@build_dir} /usr/bin/apt-get --yes --force-yes install #{deb}", {:verbose => @verbose})
-    end
+    packages.each { |deb| install_deb(deb) }
 
     # umount
     say "Umounting root for #{name}", :green
