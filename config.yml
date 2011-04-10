@@ -2,7 +2,7 @@ debug: 0
 verbose: 1
 specif: 0
 loading: 1
-dummy: 1
+dummy: 0
 log: 1
 locale: en_US.ISO-8859-15
 log_dir: /var/jester/logs
