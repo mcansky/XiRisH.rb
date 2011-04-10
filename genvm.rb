@@ -316,7 +316,6 @@ class JesterSmith < Thor
     load_class(options[:class])
     n_name = name.gsub(/\s/, '_')
     name = name.downcase
-    version = options[:version].downcase
     storage = options[:storage]
     ip = options[:ip]
     @ip = ip
