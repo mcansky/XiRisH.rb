@@ -268,7 +268,7 @@ class JesterSmith < Thor
       @packages = class_data["packages"]
       @daemons = class_data["daemons"]
       @base = class_data["base"]
-      say "Loaded class #{class_name} !"
+      say "Loaded class #{class_name} !", :green
     end
 
     # setting up the xm env
@@ -308,8 +308,6 @@ class JesterSmith < Thor
     #argument :storage, :type => :string, :desc => "the storage vg you want to use", :required => true
     #desc "Create a new Xen VM"
 
-    say "Starting the script with options :\n\tname : #{name}\n\tversion : #{options[:version]}\n\tip : #{options[:ip]}\n\tstorage : #{options[:storage]}\n", :green
-
     # loading some vars
     current_dir = File.expand_path(File.dirname(File.dirname(__FILE__)))
     config = YAML::load( File.open( current_dir + "/config.yml" ) )
@@ -341,13 +339,13 @@ class JesterSmith < Thor
     end
     unless @auto
       say "Ready to proceed with following args :\n
-      \tname : #{name}\n
-      \tversion : #{@version}\n
-      \tclasse: #{@class}\n
-      \tip : #{@ip}\n
-      \tgateway : #{@gateway}\n
+      \tname : #{name}
+      \tversion : #{@version}
+      \tclasse: #{@class}
+      \tip : #{@ip}
+      \tgateway : #{@gateway}
       \tpackages : #{@packages.join(", ")}\n
-      \tdaemons : #{@daemons.join(", ")}", :yellow
+      \tdaemons : #{@daemons.join(", ")}\n", :yellow
       if no?("Would you like to proceed ?")
         exit(0)
       end
