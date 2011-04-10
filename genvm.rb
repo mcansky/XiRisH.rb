@@ -328,8 +328,6 @@ class JesterSmith < Thor
     # default args aka squeeze 64
     @mirror = config["mirror"]
     @locale = config["locale"] || 'en_US.ISO-8859-15'
-    @packages = options[:packages]
-    @daemons = options[:daemons]
     @bare = true if (options[:bare] == true)
     @pub_key = config["pub_key"]
     @gateway = config["gateway"]
