@@ -300,6 +300,7 @@ class JesterSmith < Thor
   desc "create", "Create a new vm"
   method_options :ip => :string, :storage => :string, :no_install => false, :silent => false, :bare => false
   method_option :class, :type => :string, :required => true
+  method_option :auto, :type => :boolean
   def create(name)
     #argument :name, :type => :string, :desc => "the name of the vm", :required => true
     #argument :version, :type => :string, :desc => "the version of debian you want to use", :required => true
@@ -337,6 +338,19 @@ class JesterSmith < Thor
       say "WARNING : Dummy mode !", :red
       config["build_dir"] = "/tmp/jester"
       config["log_dir"] = "/tmp/jester_log"
+    end
+    unless @auto
+      say "Ready to proceed with following args :\n
+      \tname : #{name}\n
+      \tversion : #{@version}\n
+      \tclasse: #{@class}\n
+      \tip : #{@ip}\n
+      \tgateway : #{@gateway}\n
+      \tpackages : #{@packages.join(", ")}\n
+      \tdaemons : #{@daemons.join(", ")}", :yellow
+      if no?("Would you like to proceed ?")
+        exit(0)
+      end
     end
 
     if !@noinstall
