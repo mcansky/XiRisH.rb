@@ -45,3 +45,7 @@ You might want to read : https://github.com/wycats/thor to debug or do stuff aro
 ## Fork it
 
 If you have any suggestions or ideas, or just need to adapt the script to your needs make a fork on github : https://github.com/mcansky/XiRisH.rb . You can report issues and make pull request through this mean too.
+
+## License
+
+Under MIT license (see LICENSE file).
