@@ -52,7 +52,7 @@ class JesterSmith < Thor
     end
 
     # install part (deboot strap and all)
-    def install(name, version, ip, storage)
+    def install(name, ip, storage)
       for_line = "for #{name} on #{storage}"
       # creating dirs
       FileUtils.mkdir_p(@log_dir)
@@ -76,23 +76,23 @@ class JesterSmith < Thor
 
       # debootstrap
       versions = ["lenny", "squeeze32", "squeeze64"]
-      raise ArgumentError, "version not known" if !versions.include?(version)
+      raise ArgumentError, "version #{@version} not known" if !versions.include?(@version)
       case
-        when version == "lenny"
+        when @version == "lenny"
           @arch = "amd64"
           @kernel = "linux-image-2.6-xen-amd64"
           @base = "lenny"
-        when version == "squeeze32"
+        when @version == "squeeze32"
           @arch = "i386"
           @kernel = "linux-image-2.6-686-bigmem"
           @base = "squeeze"
-        when version == "squeeze64"
+        when @version == "squeeze64"
           @arch = "amd64"
           @kernel = "linux-image-2.6-amd64"
           @base = "squeeze"
       end
       # running the debootstrap
-      say "Deboostraping #{name} as #{version}", :green
+      say "Deboostraping #{name} as #{@version}", :green
       run("debootstrap --arch=#{@arch} --components=main,contrib,non-free --include=#{@kernel} #{@base} #{@build_dir} #{@mirror}", {:verbose => @verbose})
     end
 
@@ -190,8 +190,8 @@ class JesterSmith < Thor
       xenconf = <<-EOF
         kernel = '#{vmlinuz_file}'
         ramdisk= '#{initrd_file}'
-        vcpus = '1'
-        memory = '512'
+        vcpus = '#{@vcpus}'
+        memory = '#{@memory}'
         name = '#{name}'
         vif = [ 'ip=#{@ip}' ]
         disk = [
@@ -254,6 +254,23 @@ class JesterSmith < Thor
       create_file "#{@build_dir}/etc/hostname", name.gsub("_",'-')
     end
 
+    # loading the class data
+    def load_class(class_name)
+      current_dir = File.expand_path(File.dirname(File.dirname(__FILE__)))
+      raise ArgumentError, "Class #{class_name} not found !" if !File.exist?(current_dir + "/classes/#{class_name}.yml")
+      # loading data
+      class_data = YAML::load( File.open(current_dir +  "/classes/#{class_name}.yml" ) )
+      @lv_size = class_data["lv_size"]
+      @lv_swap_size = class_data["lv_swap_size"]
+      @memory = class_data["memory"]
+      @vcpus = class_data["vcpus"]
+      @version = class_data["version"]
+      @packages = class_data["packages"]
+      @daemons = class_data["daemons"]
+      @base = class_data["base"]
+      say "Loaded class #{class_name} !", :green
+    end
+
     # setting up the xm env
     def setup_xm(name)
       # kernel and xen config gen & setup
@@ -281,7 +298,9 @@ class JesterSmith < Thor
   #argument :storage, :type => :string, :required => true
   #argument :version, :type => :string, :default => "squeeze64"
   desc "create", "Create a new vm"
-  method_options :ip => :string, :storage => :string, :version => "squeeze64", :no_install => false, :silent => false, :bare => false, :packages => :array, :daemons => :array
+  method_options :ip => :string, :storage => :string, :no_install => false, :silent => false, :bare => false
+  method_option :class, :type => :string, :required => true
+  method_option :auto, :type => :boolean
   def create(name)
     #argument :name, :type => :string, :desc => "the name of the vm", :required => true
     #argument :version, :type => :string, :desc => "the version of debian you want to use", :required => true
@@ -289,14 +308,13 @@ class JesterSmith < Thor
     #argument :storage, :type => :string, :desc => "the storage vg you want to use", :required => true
     #desc "Create a new Xen VM"
 
-    say "Starting the script with options :\n\tname : #{name}\n\tversion : #{options[:version]}\n\tip : #{options[:ip]}\n\tstorage : #{options[:storage]}\n", :green
-
     # loading some vars
-    config = YAML::load( File.open( "config.yml" ) )
-    tools = ["lvcreate","mkfs","mount","debootstrap","mkdir","cat","dd","mkswap","echo"]
+    current_dir = File.expand_path(File.dirname(File.dirname(__FILE__)))
+    config = YAML::load( File.open( current_dir + "/config.yml" ) )
+    # loading the class data
+    load_class(options[:class])
     n_name = name.gsub(/\s/, '_')
     name = name.downcase
-    version = options[:version].downcase
     storage = options[:storage]
     ip = options[:ip]
     @ip = ip
@@ -306,16 +324,9 @@ class JesterSmith < Thor
     @verbose = true
     @verbose = false if ((config["verbose"] == 0) || (options[:silent] == true))
     @noinstall = options[:no_install]
-    @lv_size = config["lv_size"]
-    @lv_swap_size = config["lv_swap_size"]
     # default args aka squeeze 64
-    @arch = "amd64"
-    @kernel = "linux-image-2.6-amd64"
-    @base = "squeeze"
     @mirror = config["mirror"]
     @locale = config["locale"] || 'en_US.ISO-8859-15'
-    @packages = options[:packages]
-    @daemons = options[:daemons]
     @bare = true if (options[:bare] == true)
     @pub_key = config["pub_key"]
     @gateway = config["gateway"]
@@ -326,9 +337,23 @@ class JesterSmith < Thor
       config["build_dir"] = "/tmp/jester"
       config["log_dir"] = "/tmp/jester_log"
     end
+    unless @auto
+      say "Ready to proceed with following args :\n
+      \tname : #{name}
+      \tversion : #{@version}
+      \tclasse: #{@class}
+      \tip : #{@ip}
+      \tgateway : #{@gateway}
+      \tpackages : #{@packages.join(", ")}
+      \tdaemons : #{@daemons.join(", ")}\n", :yellow
+      if no?("Would you like to proceed ?")
+        exit(0)
+      end
+    end
 
     if !@noinstall
-      install(n_name, version, ip, storage)
+      # install : debootstrap, storage creation etc
+      install(n_name, ip, storage)
     else
       say "No install requested, directly configuring", :yellow
       # mount fs
@@ -336,6 +361,7 @@ class JesterSmith < Thor
       run("mount /dev/#{storage}/#{name} #{@build_dir}", {:verbose => @verbose})
     end
 
+    # setting up the xm env
     setup_xm(n_name)
 
     unless @bare

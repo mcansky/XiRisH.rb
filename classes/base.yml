@@ -1,0 +1,11 @@
+lv_size: 4G
+lv_swap_size: 512M
+memory: 512M
+vcpus: 1
+version: squeeze64
+packages:
+  - mysql-server
+  - puppet
+daemons:
+  - lighttpd
+base: squeeze
