@@ -265,7 +265,7 @@ class JesterSmith < Thor
       @memory = class_data["memory"]
       @vcpus = class_data["vcpus"]
       @version = class_data["version"]
-      @packages = class_data["packages"]
+      @packages = class_data["packages"] || Array.new
       @daemons = class_data["daemons"]
       @base = class_data["base"]
       say "Loaded class #{class_name} !", :green
